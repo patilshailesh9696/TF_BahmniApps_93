@@ -1,8 +1,8 @@
 'use strict';
 
 angular.module('bahmni.clinical')
-    .controller('PatientListHeaderController', ['$scope', '$rootScope', '$bahmniCookieStore', 'providerService', 'spinner', 'locationService', '$window', 'ngDialog', 'retrospectiveEntryService', '$translate',
-        function ($scope, $rootScope, $bahmniCookieStore, providerService, spinner, locationService, $window, ngDialog, retrospectiveEntryService, $translate) {
+    .controller('PatientListHeaderController', ['$location', '$scope', '$rootScope', '$bahmniCookieStore', 'providerService', 'spinner', 'locationService', '$window', 'ngDialog', 'retrospectiveEntryService', '$translate',
+        function ($location, $scope, $rootScope, $bahmniCookieStore, providerService, spinner, locationService, $window, ngDialog, retrospectiveEntryService, $translate) {
             var DateUtil = Bahmni.Common.Util.DateUtil;
             $scope.maxStartDate = DateUtil.getDateWithoutTime(DateUtil.today());
             var selectedProvider = {};
@@ -15,6 +15,7 @@ angular.module('bahmni.clinical')
                     return providerService.search(searchAttrs.term);
                 };
             };
+            $scope.note = "Consultation Charges";
 
             $scope.getProviderDataResults = function (data) {
                 return data.data.results.map(function (providerDetails) {
@@ -42,14 +43,36 @@ angular.module('bahmni.clinical')
                 changeCookieData();
                 $window.location.reload(false);
             };
+            $scope.nextpage = function (payment, fees, note) {
+                var pathArray = $location.path().split('/');
+
+                console.log("Payment.type >>", payment.type, "UUID >>", pathArray[3], "FEES >>", fees, "NOTE >>", note,
+                    "URL >>", $location.absUrl());
+            };
+            $scope.options = [
+                { type: 'Cash' },
+                { type: 'Card' },
+                { type: 'Other' }
+            ];
+
+            $scope.payment = $scope.options[0];
 
             $scope.isCurrentLocation = function (location) {
                 return getCurrentCookieLocation().uuid === location.uuid;
             };
 
             $scope.popUpHandler = function () {
-                $scope.dialog = ngDialog.open({ template: 'consultation/views/defaultDataPopUp.html', className: 'test ngdialog-theme-default',
-                    controller: 'PatientListHeaderController'});
+                $scope.dialog = ngDialog.open({
+                    template: 'consultation/views/defaultDataPopUp.html', className: 'test ngdialog-theme-default',
+                    controller: 'PatientListHeaderController'
+                });
+                $('body').addClass('show-controller-back');
+            };
+            $scope.popUpHandlerTakePayment = function () {
+                $scope.dialog = ngDialog.open({
+                    template: 'consultation/views/takePayment.html', className: 'test ngdialog-theme-default',
+                    controller: 'PatientListHeaderController'
+                });
                 $('body').addClass('show-controller-back');
             };
 
@@ -95,11 +118,11 @@ angular.module('bahmni.clinical')
             var changeCookieData = function () {
                 retrospectiveEntryService.resetRetrospectiveEntry($scope.date);
                 $bahmniCookieStore.remove(Bahmni.Common.Constants.grantProviderAccessDataCookieName);
-                $bahmniCookieStore.put(Bahmni.Common.Constants.grantProviderAccessDataCookieName, selectedProvider, {path: '/', expires: 1});
+                $bahmniCookieStore.put(Bahmni.Common.Constants.grantProviderAccessDataCookieName, selectedProvider, { path: '/', expires: 1 });
 
                 var selectedLocation = getLocationFor($scope.selectedLocationUuid);
                 $bahmniCookieStore.remove(Bahmni.Common.Constants.locationCookieName);
-                $bahmniCookieStore.put(Bahmni.Common.Constants.locationCookieName, {name: selectedLocation.display, uuid: selectedLocation.uuid}, {path: '/', expires: 7});
+                $bahmniCookieStore.put(Bahmni.Common.Constants.locationCookieName, { name: selectedLocation.display, uuid: selectedLocation.uuid }, { path: '/', expires: 7 });
             };
 
             var init = function () {
